@@ -26,16 +26,23 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production' 
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = isProduction
   ? [
       process.env.CORS_ORIGIN || 'https://smart-student-hub.vercel.app',
       'https://smart-student-hub.vercel.app',
       'https://smart-student-hub-frontend.vercel.app'
     ]
-  : ['http://localhost:3000'];
+  : [/\.github\.dev$/, 'http://localhost:3000'];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isAllowed = allowedOrigins.some((rule) =>
+      rule instanceof RegExp ? rule.test(origin) : rule === origin
+    );
+    return isAllowed ? callback(null, true) : callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
